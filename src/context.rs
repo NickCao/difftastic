@@ -14,14 +14,38 @@ use crate::{
 /// or end of the file.
 const MAX_PADDING: usize = 3;
 
-fn all_positions(mps: &[MatchedPos]) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
-    let mut highest_line: Option<LineNumber> = None;
-    let mut highest_opposite_line: Option<LineNumber> = None;
+pub fn all_matched_lines(
+    lhs_mps: &[MatchedPos],
+    rhs_mps: &[MatchedPos],
+) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    let lhs_matched_lines = matched_lines(lhs_mps);
+    let rhs_novel_lines = novel_lines(rhs_mps);
+    merge_in_opposite_lines(&lhs_matched_lines, &rhs_novel_lines)
+}
+
+fn novel_lines(mps: &[MatchedPos]) -> Vec<LineNumber> {
+    let mut lines = HashSet::new();
+    for mp in mps {
+        match mp.kind {
+            MatchKind::Novel { .. } | MatchKind::ChangedCommentPart {} => {
+                lines.insert(mp.pos.line);
+            }
+            MatchKind::Unchanged { .. } | MatchKind::UnchangedCommentPart { .. } => {}
+        }
+    }
+
+    let mut res: Vec<LineNumber> = lines.into_iter().collect();
+    res.sort_unstable();
+    res
+}
+
+fn matched_lines(mps: &[MatchedPos]) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    let mut highest_line = None;
+    let mut highest_opposite_line = None;
 
     let mut res: Vec<(Option<LineNumber>, Option<LineNumber>)> = vec![];
-
     for mp in mps {
-        let opposite_line: Option<LineNumber> = match &mp.kind {
+        let opposite_line = match &mp.kind {
             MatchKind::Unchanged { opposite_pos, .. }
             | MatchKind::UnchangedCommentPart { opposite_pos, .. } => {
                 if let Some(highest_opposite_side) = highest_opposite_line {
@@ -47,6 +71,36 @@ fn all_positions(mps: &[MatchedPos]) -> Vec<(Option<LineNumber>, Option<LineNumb
             highest_line = Some(mp.pos.line);
             if opposite_line.is_some() {
                 highest_opposite_line = opposite_line;
+            }
+        }
+    }
+
+    res
+}
+
+fn merge_in_opposite_lines(
+    matched_lines: &[(Option<LineNumber>, Option<LineNumber>)],
+    novel_opposite_lines: &[LineNumber],
+) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    let mut res: Vec<(Option<LineNumber>, Option<LineNumber>)> = vec![];
+
+    let mut i = 0;
+    for (line, opposite_line) in matched_lines {
+        match opposite_line {
+            Some(opposite_line) => {
+                while let Some(novel_opposite_line) = novel_opposite_lines.get(i) {
+                    if novel_opposite_line < opposite_line {
+                        res.push((None, Some(*novel_opposite_line)));
+                        i += 1;
+                    } else if novel_opposite_line == opposite_line {
+                        i += 1;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            None => {
+                res.push((*line, *opposite_line));
             }
         }
     }
