@@ -12,7 +12,7 @@ use crate::{
 ///
 /// We may show fewer lines if the modified lines are at the beginning
 /// or end of the file.
-const MAX_PADDING: usize = 3;
+pub const MAX_PADDING: usize = 3;
 
 pub fn all_matched_lines(
     lhs_mps: &[MatchedPos],

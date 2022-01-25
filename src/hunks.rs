@@ -13,7 +13,7 @@ use std::{
 use crate::{
     context::{
         add_context, calculate_after_context, calculate_before_context, flip_tuple, flip_tuples,
-        opposite_positions,
+        opposite_positions, MAX_PADDING,
     },
     lines::LineNumber,
     syntax::{zip_pad_shorter, MatchedPos},
@@ -677,6 +677,60 @@ fn fill_matched_lines(
     }
 
     res
+}
+
+pub fn matched_lines_for_hunk(
+    matched_lines: &[(Option<LineNumber>, Option<LineNumber>)],
+    hunk: &Hunk,
+) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    // TODO: Use binary search instead.
+    let (hunk_lhs_first, hunk_rhs_first) = hunk.lines.first().expect("Hunks are non-empty");
+    let (hunk_lhs_last, hunk_rhs_last) = hunk.lines.last().expect("Hunks are non-empty");
+
+    let mut start_i = 0;
+    for (i, (lhs_matched_line, rhs_matched_line)) in matched_lines.iter().enumerate() {
+        if let (Some(lhs_matched_line), Some(hunk_lhs_first)) = (lhs_matched_line, hunk_lhs_first) {
+            if lhs_matched_line == hunk_lhs_first {
+                start_i = i;
+                break;
+            }
+        }
+        if let (Some(rhs_matched_line), Some(hunk_rhs_first)) = (rhs_matched_line, hunk_rhs_first) {
+            if rhs_matched_line == hunk_rhs_first {
+                start_i = i;
+                break;
+            }
+        }
+    }
+
+    let mut end_i = matched_lines.len();
+    for (i, (lhs_matched_line, rhs_matched_line)) in matched_lines.iter().enumerate() {
+        if let (Some(lhs_matched_line), Some(hunk_lhs_last)) = (lhs_matched_line, hunk_lhs_last) {
+            if lhs_matched_line == hunk_lhs_last {
+                end_i = i;
+                break;
+            }
+        }
+        if let (Some(rhs_matched_line), Some(hunk_rhs_last)) = (rhs_matched_line, hunk_rhs_last) {
+            if rhs_matched_line == hunk_rhs_last {
+                end_i = i;
+                break;
+            }
+        }
+    }
+
+    if start_i >= MAX_PADDING {
+        start_i -= MAX_PADDING;
+    } else {
+        start_i = 0;
+    }
+    if end_i + MAX_PADDING <= matched_lines.len() {
+        end_i += MAX_PADDING
+    } else {
+        end_i = matched_lines.len();
+    }
+
+    matched_lines[start_i..end_i].iter().copied().collect()
 }
 
 pub fn aligned_lines_from_hunk(
