@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     lines::LineNumber,
-    syntax::{zip_repeat_shorter, MatchKind, MatchedPos},
+    syntax::{zip_repeat_shorter, MatchKind, MatchedPos}, hunks::{ensure_contiguous, compact_gaps},
 };
 
 /// The maximum number of lines that may be displayed above and below
@@ -14,7 +14,16 @@ use crate::{
 /// or end of the file.
 pub const MAX_PADDING: usize = 3;
 
-pub fn all_matched_lines(
+pub fn all_matched_lines_filled(
+    lhs_mps: &[MatchedPos],
+    rhs_mps: &[MatchedPos],
+) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    let matched_lines = all_matched_lines(lhs_mps, rhs_mps);
+
+    compact_gaps(ensure_contiguous(&matched_lines))
+}
+
+fn all_matched_lines(
     lhs_mps: &[MatchedPos],
     rhs_mps: &[MatchedPos],
 ) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {

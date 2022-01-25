@@ -8,8 +8,8 @@ use std::{
 };
 
 use crate::{
-    context::opposite_positions,
-    hunks::{aligned_lines_from_hunk, Hunk},
+    context::{opposite_positions, all_matched_lines_filled},
+    hunks::{aligned_lines_from_hunk, Hunk, matched_lines_for_hunk},
     lines::{codepoint_len, format_line_num, LineNumber, MaxLine},
     positions::SingleLineSpan,
     style::{self, apply_colors, color_positions, split_and_apply, Style},
@@ -276,18 +276,14 @@ pub fn display_hunks(
     let mut prev_lhs_line_num = None;
     let mut prev_rhs_line_num = None;
 
+    let matched_lines = all_matched_lines_filled(lhs_mps, rhs_mps);
+
     let mut out_lines: Vec<String> = vec![];
 
     for (i, hunk) in hunks.iter().enumerate() {
         out_lines.push(style::header(display_path, i + 1, hunks.len(), lang_name));
 
-        let aligned_lines = aligned_lines_from_hunk(
-            hunk,
-            &opposite_to_lhs,
-            &opposite_to_rhs,
-            lhs_src.max_line(),
-            rhs_src.max_line(),
-        );
+        let aligned_lines = matched_lines_for_hunk(&matched_lines, hunk);
         let no_lhs_changes = hunk.lines.iter().all(|(l, _)| l.is_none());
         let no_rhs_changes = hunk.lines.iter().all(|(_, r)| r.is_none());
         let same_lines = aligned_lines.iter().all(|(l, r)| l == r);

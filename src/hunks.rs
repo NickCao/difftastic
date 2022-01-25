@@ -491,7 +491,7 @@ pub fn matched_pos_to_hunks(lhs_mps: &[MatchedPos], rhs_mps: &[MatchedPos]) -> V
 /// 3 14
 /// 4 -- (preserve outer gaps)
 /// ```
-fn ensure_contiguous(
+pub fn ensure_contiguous(
     lines: &[(Option<LineNumber>, Option<LineNumber>)],
 ) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
     let mut res: Vec<(Option<LineNumber>, Option<LineNumber>)> = vec![];
@@ -536,7 +536,7 @@ fn ensure_contiguous(
 /// 12 21
 ///
 /// The returned vec will contain no (None, None) pairs.
-fn compact_gaps(
+pub fn compact_gaps(
     items: Vec<(Option<LineNumber>, Option<LineNumber>)>,
 ) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
     let mut res: Vec<(Option<LineNumber>, Option<LineNumber>)> = vec![];
