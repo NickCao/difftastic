@@ -69,6 +69,7 @@ Difftastic supports the following languages:
 * Java
 * JavaScript (and JSX)
 * JSON
+* Nix
 * OCaml
 * Python
 * Ruby

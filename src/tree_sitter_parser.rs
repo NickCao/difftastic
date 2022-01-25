@@ -57,6 +57,7 @@ extern "C" {
     fn tree_sitter_java() -> ts::Language;
     fn tree_sitter_javascript() -> ts::Language;
     fn tree_sitter_json() -> ts::Language;
+    fn tree_sitter_nix() -> ts::Language;
     fn tree_sitter_ocaml() -> ts::Language;
     fn tree_sitter_ocaml_interface() -> ts::Language;
     fn tree_sitter_python() -> ts::Language;
@@ -296,6 +297,19 @@ pub fn from_language(language: guess::Language) -> TreeSitterConfig {
                     include_str!("../vendor/highlights/json.scm"),
                 )
                 .unwrap(),
+            }
+        }
+        Nix => {
+            let language = unsafe { tree_sitter_nix() };
+            TreeSitterConfig {
+                name: "Nix",
+                language: unsafe { tree_sitter_nix() },
+                atom_nodes: (vec!["string", "indented_string"]).into_iter().collect(),
+                delimiter_tokens: (vec![("{", "}"), ("(", ")"), ("[", "]")]),
+                highlight_query: ts::Query::new(
+                    language,
+                    include_str!("../vendor/highlights/nix.scm"),
+                ).unwrap(),
             }
         }
         OCaml => {
