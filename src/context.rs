@@ -14,6 +14,46 @@ use crate::{
 /// or end of the file.
 const MAX_PADDING: usize = 3;
 
+fn all_positions(mps: &[MatchedPos]) -> Vec<(Option<LineNumber>, Option<LineNumber>)> {
+    let mut highest_line: Option<LineNumber> = None;
+    let mut highest_opposite_line: Option<LineNumber> = None;
+
+    let mut res: Vec<(Option<LineNumber>, Option<LineNumber>)> = vec![];
+
+    for mp in mps {
+        let opposite_line: Option<LineNumber> = match &mp.kind {
+            MatchKind::Unchanged { opposite_pos, .. }
+            | MatchKind::UnchangedCommentPart { opposite_pos, .. } => {
+                if let Some(highest_opposite_side) = highest_opposite_line {
+                    opposite_pos
+                        .iter()
+                        .map(|p| p.line)
+                        .find(|l| *l > highest_opposite_side)
+                } else {
+                    opposite_pos.first().map(|p| p.line)
+                }
+            }
+            MatchKind::Novel { .. } | MatchKind::ChangedCommentPart {} => None,
+        };
+
+        let should_insert = match highest_line {
+            Some(highest_this_side) => mp.pos.line > highest_this_side,
+            None => false,
+        };
+
+        if should_insert {
+            res.push((Some(mp.pos.line), opposite_line));
+
+            highest_line = Some(mp.pos.line);
+            if opposite_line.is_some() {
+                highest_opposite_line = opposite_line;
+            }
+        }
+    }
+
+    res
+}
+
 // TODO: use FxHashMap here.
 pub fn opposite_positions(mps: &[MatchedPos]) -> HashMap<LineNumber, HashSet<LineNumber>> {
     let mut res: HashMap<LineNumber, HashSet<LineNumber>> = HashMap::new();
